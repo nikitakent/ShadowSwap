@@ -19,6 +19,6 @@ async function getBlockTimes() {
 }
 
 // run the following script to get block times using HardHat x Sepolia: 
-// npx hardhat run scripts/deploy.js --network sepolia
+// npx hardhat run BatchCalculator.js
 
 getBlockTimes();
