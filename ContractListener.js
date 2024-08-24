@@ -4,7 +4,7 @@ const { executeSwap } = require('./ExecuteSwap');
 const { getLatestBlockTime } = require('./BatchCalculator');
 
 const provider = new ethers.providers.JsonRpcProvider("https://l1sload-rpc.scroll.io");
-const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF"; // L1SLOAD Calculator Contract Address
+const contractAddress = "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f"; // L1SLOAD Calculator Contract Address
 
 // Contract ABI (Only for the SwapToken1 and SwapToken2 events)
 const contractABI = [

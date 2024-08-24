@@ -8,7 +8,10 @@ async function executeSwap(batch) {
     await Promise.all(batch.map(async (event) => {
         if (event.token1AmountIn) {
             try {
-                await amm.swapToken1(event.token1AmountIn, event.user);
+                const token1Amount = event.token1AmountIn.toNumber();
+                await amm.swapToken1(token1Amount, event.user);
+                console.log("Event Token1 Amount", token1Amount);
+                console.log("Event User.", event.user);
                 console.log('Swapped token1 successfully');
             } catch (error) {
                 console.error('Error swapping token1:', error.message);
@@ -18,8 +21,9 @@ async function executeSwap(batch) {
             }
         } else if (event.token2AmountIn) {
             try {
-                await amm.swapToken2(event.token2AmountIn, event.user);
-                console.log('Swapped token2 successfully');
+                const token2Amount = event.token2AmountIn.toNumber();
+                await amm.swapToken2(token2Amount, event.user);
+                console.log('Swapped token 2 successfully');
             } catch (error) {
                 console.error('Error swapping token2:', error.message);
                 if (error.error && error.error.message) {
