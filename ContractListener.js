@@ -1,5 +1,7 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
+const { executeSwap } = require('./ExecuteSwap');
+const { getLatestBlockTime } = require('./BatchCalculator');
 
 const provider = new ethers.providers.JsonRpcProvider("https://l1sload-rpc.scroll.io");
 const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF"; // L1SLOAD Calculator Contract Address
@@ -54,7 +56,8 @@ function listenForEvents() {
 
 async function processBatchAndReset() {
   if (eventBatch.length) {
-    await sendBatchToSmartContract(eventBatch);
+    await executeSwap(eventBatch);
+    console.log("Batch sent to blockchain.", eventBatch);
     eventBatch = [];
     eventSet.clear();
     console.log("Batch processed and reset.");
@@ -64,7 +67,7 @@ async function processBatchAndReset() {
 
 async function startBatchProcessor() {
   console.log("Starting batch processor...");
-  const blockTimeInterval = 12000; 
+  const blockTimeInterval = getLatestBlockTime(); 
   listenForEvents();  
 
   setTimeout(async () => {

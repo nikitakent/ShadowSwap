@@ -5,25 +5,33 @@ const provider = ethers.getDefaultProvider(network, {
     infura: { projectId: process.env.INFURA_API_URL, projectSecret: process.env.private_key },
 });
 
-// Listen for new blocks and log block times
+let latestBlockTime = null;
+
 async function getBlockTimes() {
-  return new Promise((resolve, reject) => {
-    provider.once('block', async (blockNumber) => {
+    provider.on('block', async (blockNumber) => {
       try {
         const block = await provider.getBlock(blockNumber);
         const block_behind = await provider.getBlock(blockNumber - 10);
-        
-        // Calculate the block time interval in milliseconds
         const block_time_interval = ((block.timestamp - block_behind.timestamp) / 10) * 1000;
+        latestBlockTime = block_time_interval;
         console.log(`Updated Block Time Interval: ${block_time_interval} ms`);
-
-        // Resolve the promise with the block time interval
-        resolve(block_time_interval);
       } catch (error) {
-        reject(error);
+        console.error('Error fetching block time:', error.message);
       }
     });
-  });
-}
-
-module.exports = { getBlockTimes };
+  }
+  
+  // Retrieve the latest available block time when called
+  function getLatestBlockTime() {
+    if (latestBlockTime !== null) {
+      console.log(`Latest Block Time Interval: ${latestBlockTime} ms`);
+      return latestBlockTime;
+    } else {
+        console.log("No block time found - returning default 12000 ms");
+        return 12000;
+    }
+  }
+  
+  getBlockTimes();
+  // Export both functions
+  module.exports = { getBlockTimes, getLatestBlockTime };
