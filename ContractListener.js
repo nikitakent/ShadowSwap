@@ -2,9 +2,7 @@ require('dotenv').config();
 const { ethers } = require('ethers');
 
 const provider = new ethers.providers.JsonRpcProvider("https://l1sload-rpc.scroll.io");
-
-// Replace with your deployed Calculator contract address
-const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF";
+const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF"; // L1SLOAD Calculator Contract Address
 
 // Contract ABI (Only for the SwapToken1 and SwapToken2 events)
 const contractABI = [
@@ -32,7 +30,7 @@ const contractABI = [
 
 const contract = new ethers.Contract(contractAddress, contractABI, provider);
 let eventBatch = [];
-let eventSet = new Set(); // Track Unique Events in key
+let eventSet = new Set(); // hashset to store unique events
 
 function listenForEvents() {
   contract.on("SwapToken1", (user, token1AmountIn, timestamp) => {
@@ -62,10 +60,6 @@ async function processBatchAndReset() {
     console.log("Batch processed and reset.");
   }
   console.log("No events to process.");
-}
-
-async function sendBatchToSmartContract(batch) {
-  console.log("Sending batch:", batch);
 }
 
 async function startBatchProcessor() {
