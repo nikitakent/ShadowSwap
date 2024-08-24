@@ -1,11 +1,6 @@
 require('dotenv').config();
 const { ethers } = require("ethers");
-
 const network = "sepolia";
-
-// Specify your own API keys
-// Each is optional, and if you omit it the default
-// API key for that service will be used.
 const provider = ethers.getDefaultProvider(network, {
     infura: { projectId: process.env.INFURA_API_URL, projectSecret: process.env.private_key},
 });

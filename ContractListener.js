@@ -1,45 +1,130 @@
-// Get the emitted Event from the Calculator.sol
-// if BatchCalculator interval != 0, then add transaction to the contract queue (perhaps like an array)
-// at interval == 0, deploy the contract with the array of transactions.
-// clear the contract queue, and start over.
-
 require('dotenv').config();
-const { ethers } = require("ethers");
+const { ethers } = require('ethers');
 
-getBlockTimes()
-
-// Connect to Scroll L2
 const provider = new ethers.providers.JsonRpcProvider("https://l1sload-rpc.scroll.io");
 
-// Replace with your deployed contract address
+// Replace with your deployed Calculator contract address
 const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF";
-
-// Contract ABI (for listening to events)
+const blockTimeInterval = getBlockTimes();
+// Contract ABI (Only for the SwapToken1 and SwapToken2 events)
 const contractABI = [
-  "event SwapToken1(address indexed user, uint256 token1AmountIn, uint256 timestamp)",
-  "event SwapToken2(address indexed user, uint256 token2AmountIn, uint256 timestamp)"
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "token1AmountIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "SwapToken1",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "token2AmountIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "SwapToken2",
+    "type": "event"
+  }
 ];
 
 // Create contract instance
 const contract = new ethers.Contract(contractAddress, contractABI, provider);
 
-// Listen for SwapToken1 event
+let eventBatch = [];
+
+// Listen for the SwapToken1 event
 contract.on("SwapToken1", (user, token1AmountIn, timestamp) => {
-  try {
-    console.log(`SwapToken1 event detected: User ${user} swapped ${token1AmountIn.toString()} tokens at ${new Date(timestamp * 1000).toLocaleString()}`);
-  } catch (error) {
-    console.error("Error processing SwapToken1 event:", error);
-  }
-});
+  console.log(`SwapToken1 event: User ${user}, Amount ${token1AmountIn.toString()}, Time ${new Date(timestamp * 1000).toLocaleString()}`);
+  
+  // Store the event in the eventBatch array
+  eventBatch.push({
+    event: "SwapToken1",
+    user,
+    tokenAmount: token1AmountIn.toString(),
+    timestamp: new Date(timestamp * 1000).toLocaleString()
+  });
 
-// Listen for SwapToken2 event
+  // Listen for the SwapToken2 event
 contract.on("SwapToken2", (user, token2AmountIn, timestamp) => {
-  try {
-    console.log(`SwapToken2 event detected: User ${user} swapped ${token2AmountIn.toString()} tokens at ${new Date(timestamp * 1000).toLocaleString()}`);
-  } catch (error) {
-    console.error("Error processing SwapToken2 event:", error);
-  }
+  console.log(`SwapToken2 event: User ${user}, Amount ${token2AmountIn.toString()}, Time ${new Date(timestamp * 1000).toLocaleString()}`);
+  
+  // Store the event in the eventBatch array
+  eventBatch.push({
+    event: "SwapToken2",
+    user,
+    tokenAmount: token2AmountIn.toString(),
+    timestamp: new Date(timestamp * 1000).toLocaleString()
+  });
 });
 
-// Log to confirm that the script is running
-console.log(`Listening for SwapToken1 and SwapToken2 events on contract at ${contractAddress}`);
+console.log(`Listening for SwapToken1 and SwapToken2 events...`);
+});
+
+// Listen for the SwapToken2 event
+contract.on("SwapToken2", (user, token2AmountIn, timestamp) => {
+  console.log(`SwapToken2 event: User ${user}, Amount ${token2AmountIn.toString()}, Time ${new Date(timestamp * 1000).toLocaleString()}`);
+});
+
+console.log(`Listening for SwapToken1 and SwapToken2 events...`);
+
+function processBatchAndReset() {
+  if (eventBatch.length > 0) {
+    console.log(`Processing ${eventBatch.length} events in the current batch...`);
+    
+    // Here you would call another smart contract with the eventBatch array
+    // Example: sendBatchToSmartContract(eventBatch);
+    
+    // After processing, reset the batch
+    eventBatch = [];
+  } else {
+    console.log("No events to process in this interval.");
+  }
+
+  console.log("Batch reset, waiting for the next block interval...");
+}
+
+async function startBatchProcessor() {
+  const blockTimeInterval = await getBlockTimeInterval();
+  console.log(`Starting batch processor with block time interval: ${blockTimeInterval} ms`);
+
+  // Set up interval to process the batch at every block time interval
+  setInterval(() => {
+    processBatchAndReset();
+  }, blockTimeInterval);
+}
+
+// Start the batch processor
+startBatchProcessor();
