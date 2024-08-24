@@ -79,4 +79,5 @@ async function startBatchProcessor() {
   }, blockTimeInterval);
 }
 
-startBatchProcessor();
+startBatchProcessor(); 
+}
