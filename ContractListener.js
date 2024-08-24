@@ -52,6 +52,7 @@ function listenForEvents() {
       eventSet.add(eventKey);
     }
   });
+}
 
 async function processBatchAndReset() {
   if (eventBatch.length) {
@@ -80,4 +81,3 @@ async function startBatchProcessor() {
 }
 
 startBatchProcessor(); 
-}
