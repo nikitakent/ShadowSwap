@@ -1,34 +1,111 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.0;
 
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
+import "./Token.sol";
 
-contract Lock {
-    uint public unlockTime;
-    address payable public owner;
+contract Calculator {
+    address constant L1_BLOCKS_ADDRESS = 0x5300000000000000000000000000000000000001;
+    address constant L1_SLOAD_ADDRESS = 0x0000000000000000000000000000000000000101;
+    address immutable l1TokenAddress;
 
-    event Withdrawal(uint amount, uint when);
+    uint256 constant TOKEN1_BALANCE_SLOT = 2;
+    uint256 constant TOKEN2_BALANCE_SLOT = 3;
+    uint256 constant K_SLOT = 4;
 
-    constructor(uint _unlockTime) payable {
-        require(
-            block.timestamp < _unlockTime,
-            "Unlock time should be in the future"
-        );
-
-        unlockTime = _unlockTime;
-        owner = payable(msg.sender);
+    constructor(address _l1TokenAddress) {
+        l1TokenAddress = _l1TokenAddress;
     }
 
-    function withdraw() public {
-        // Uncomment this line, and the import of "hardhat/console.sol", to print a log in your terminal
-        // console.log("Unlock time is %o and block timestamp is %o", unlockTime, block.timestamp);
+    function retrieveSlotFromL1(address l1StorageAddress, uint slot) internal view returns (bytes memory) {
+        bool success;
+        bytes memory returnValue;
+        (success, returnValue) = L1_SLOAD_ADDRESS.staticcall(abi.encodePacked(l1StorageAddress, slot));
+        if(!success)
+        {
+            revert("L1SLOAD failed");
+        }
+        return returnValue;
+    }
 
-        require(block.timestamp >= unlockTime, "You can't withdraw yet");
-        require(msg.sender == owner, "You aren't the owner");
+    Token public token1;
+    Token public token2;
 
-        emit Withdrawal(address(this).balance, block.timestamp);
+    uint256 public token1Balance;
+    uint256 public token2Balance;
+    uint256 public K;
 
-        owner.transfer(address(this).balance);
+    event SwapToken1(
+        address user,
+        uint256 token1AmountIn,
+        uint256 timestamp
+    );
+
+    event SwapToken2(
+        address user,
+        uint256 token2AmountIn,
+        uint256 timestamp
+    );
+
+    // Returns amount of token2 received when swapping token1
+    function calculateToken1Swap(uint256 _token1Amount)
+        public
+        view
+        returns (uint256 token2Amount)
+    {
+        uint256 token1Balance = abi.decode(retrieveSlotFromL1(l1TokenAddress, TOKEN1_BALANCE_SLOT), (uint256));
+        uint256 token2Balance = abi.decode(retrieveSlotFromL1(l1TokenAddress, TOKEN2_BALANCE_SLOT), (uint256));
+        uint256 K = abi.decode(retrieveSlotFromL1(l1TokenAddress, K_SLOT), (uint256));
+
+        uint256 token1After = token1Balance + _token1Amount;
+        uint256 token2After = K / token1After;
+        token2Amount = token2Balance - token2After;
+
+        // Don't let the pool go to 0
+        if (token2Amount == token2Balance) {
+            token2Amount--;
+        }
+
+        require(token2Amount < token2Balance, "swap amount too large");
+    }
+
+    function swapToken1(uint256 _token1Amount) external {
+        // Emit an event
+        emit SwapToken1(
+            msg.sender,
+            _token1Amount,
+            block.timestamp
+        );
+    }
+
+    // Returns amount of token1 received when swapping token2
+    function calculateToken2Swap(uint256 _token2Amount)
+        public
+        view
+        returns (uint256 token1Amount)
+    {
+        uint256 token1Balance = abi.decode(retrieveSlotFromL1(l1TokenAddress, TOKEN1_BALANCE_SLOT), (uint256));
+        uint256 token2Balance = abi.decode(retrieveSlotFromL1(l1TokenAddress, TOKEN2_BALANCE_SLOT), (uint256));
+        uint256 K = abi.decode(retrieveSlotFromL1(l1TokenAddress, K_SLOT), (uint256));
+
+        uint256 token2After = token2Balance + _token2Amount;
+        uint256 token1After = K / token2After;
+        token1Amount = token1Balance - token1After;
+
+        // Don't let the pool go to 0
+        if (token1Amount == token1Balance) {
+            token1Amount--;
+        }
+
+        require(token1Amount < token1Balance, "swap amount to large");
+    }
+
+    function swapToken2(uint256 _token2Amount) external {
+        // Emit an event
+        emit SwapToken2(
+            msg.sender,
+            _token2Amount,
+            block.timestamp
+        );
     }
 }
