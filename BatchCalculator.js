@@ -18,6 +18,7 @@ async function getBlockTimes() {
     // console.log(`Block behind: ${blockNumber - 10} | Timestamp: ${block_behind.timestamp} | Time: ${new Date(block_behind.timestamp * 1000).toLocaleString()}`);
     block_time_interval = (block.timestamp - block_behind.timestamp) / 10
     console.log(`Updated Block Time Interval: ${block_time_interval} seconds`)
+    return block_time_interval
     // console.log(`New block: ${blockNumber} | Timestamp: ${block.timestamp} | Time: ${new Date(block.timestamp * 1000).toLocaleString()}`);
   });
 }

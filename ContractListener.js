@@ -6,11 +6,13 @@
 require('dotenv').config();
 const { ethers } = require("ethers");
 
+getBlockTimes()
+
 // Connect to Scroll L2
-const provider = new ethers.providers.JsonRpcProvider("https://sepolia-rpc.scroll.io/");
+const provider = new ethers.providers.JsonRpcProvider("https://l1sload-rpc.scroll.io");
 
 // Replace with your deployed contract address
-const contractAddress = "0x0c618e1201c8C3743ef5A446309ab5f8E9CA0fdD";
+const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF";
 
 // Contract ABI (for listening to events)
 const contractABI = [
