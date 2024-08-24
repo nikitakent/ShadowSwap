@@ -5,30 +5,15 @@ const provider = new ethers.providers.JsonRpcProvider("https://l1sload-rpc.scrol
 
 // Replace with your deployed Calculator contract address
 const contractAddress = "0x940760e3877B0AdfcCeF5Ca04882D9D125A8a8FF";
-const blockTimeInterval = getBlockTimes();
+
 // Contract ABI (Only for the SwapToken1 and SwapToken2 events)
 const contractABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "token1AmountIn",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      }
+      { "indexed": false, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "token1AmountIn", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
     ],
     "name": "SwapToken1",
     "type": "event"
@@ -36,95 +21,62 @@ const contractABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "token2AmountIn",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      }
+      { "indexed": false, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "token2AmountIn", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
     ],
     "name": "SwapToken2",
     "type": "event"
   }
 ];
 
-// Create contract instance
 const contract = new ethers.Contract(contractAddress, contractABI, provider);
-
 let eventBatch = [];
+let eventSet = new Set(); // Track Unique Events in key
 
-// Listen for the SwapToken1 event
-contract.on("SwapToken1", (user, token1AmountIn, timestamp) => {
-  console.log(`SwapToken1 event: User ${user}, Amount ${token1AmountIn.toString()}, Time ${new Date(timestamp * 1000).toLocaleString()}`);
-  
-  // Store the event in the eventBatch array
-  eventBatch.push({
-    event: "SwapToken1",
-    user,
-    tokenAmount: token1AmountIn.toString(),
-    timestamp: new Date(timestamp * 1000).toLocaleString()
+function listenForEvents() {
+  contract.on("SwapToken1", (user, token1AmountIn, timestamp) => {
+    const eventKey = `${user}-${token1AmountIn.toString()}-${timestamp.toString()}`;
+
+    if (!eventSet.has(eventKey)) {
+      eventBatch.push({ event: "SwapToken1", user, token1AmountIn, timestamp });
+      eventSet.add(eventKey);
+    }
   });
 
-  // Listen for the SwapToken2 event
-contract.on("SwapToken2", (user, token2AmountIn, timestamp) => {
-  console.log(`SwapToken2 event: User ${user}, Amount ${token2AmountIn.toString()}, Time ${new Date(timestamp * 1000).toLocaleString()}`);
-  
-  // Store the event in the eventBatch array
-  eventBatch.push({
-    event: "SwapToken2",
-    user,
-    tokenAmount: token2AmountIn.toString(),
-    timestamp: new Date(timestamp * 1000).toLocaleString()
+  contract.on("SwapToken2", (user, token2AmountIn, timestamp) => {
+    const eventKey = `${user}-${token2AmountIn.toString()}-${timestamp.toString()}`;
+
+    if (!eventSet.has(eventKey)) {
+      eventBatch.push({ event: "SwapToken2", user, token2AmountIn, timestamp });
+      eventSet.add(eventKey);
+    }
   });
-});
 
-console.log(`Listening for SwapToken1 and SwapToken2 events...`);
-});
-
-// Listen for the SwapToken2 event
-contract.on("SwapToken2", (user, token2AmountIn, timestamp) => {
-  console.log(`SwapToken2 event: User ${user}, Amount ${token2AmountIn.toString()}, Time ${new Date(timestamp * 1000).toLocaleString()}`);
-});
-
-console.log(`Listening for SwapToken1 and SwapToken2 events...`);
-
-function processBatchAndReset() {
-  if (eventBatch.length > 0) {
-    console.log(`Processing ${eventBatch.length} events in the current batch...`);
-    
-    // Here you would call another smart contract with the eventBatch array
-    // Example: sendBatchToSmartContract(eventBatch);
-    
-    // After processing, reset the batch
+async function processBatchAndReset() {
+  if (eventBatch.length) {
+    await sendBatchToSmartContract(eventBatch);
     eventBatch = [];
-  } else {
-    console.log("No events to process in this interval.");
+    eventSet.clear();
+    console.log("Batch processed and reset.");
   }
+  console.log("No events to process.");
+}
 
-  console.log("Batch reset, waiting for the next block interval...");
+async function sendBatchToSmartContract(batch) {
+  console.log("Sending batch:", batch);
 }
 
 async function startBatchProcessor() {
-  const blockTimeInterval = await getBlockTimeInterval();
-  console.log(`Starting batch processor with block time interval: ${blockTimeInterval} ms`);
+  console.log("Starting batch processor...");
+  const blockTimeInterval = 12000; 
+  listenForEvents();  
 
-  // Set up interval to process the batch at every block time interval
-  setInterval(() => {
-    processBatchAndReset();
+  setTimeout(async () => {
+    await processBatchAndReset(); // Process the batch when the time is up
+    startBatchProcessor(); // Call itself again for the next interval
+    console.log("Batch processor restarted.");
   }, blockTimeInterval);
 }
 
-// Start the batch processor
 startBatchProcessor();
