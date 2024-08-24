@@ -14,6 +14,10 @@ const provider = ethers.getDefaultProvider(network, {
 async function getBlockTimes() {
   provider.on('block', async (blockNumber) => {
     const block = await provider.getBlock(blockNumber);
+    const block_behind = await provider.getBlock(blockNumber - 10)
+    console.log(`Block behind: ${blockNumber - 10} | Timestamp: ${block_behind.timestamp} | Time: ${new Date(block_behind.timestamp * 1000).toLocaleString()}`);
+    average_time = (block.timestamp - block_behind.timestamp) / 10
+    console.log(`Average time for 10 blocks: ${average_time} seconds`)
     console.log(`New block: ${blockNumber} | Timestamp: ${block.timestamp} | Time: ${new Date(block.timestamp * 1000).toLocaleString()}`);
   });
 }
