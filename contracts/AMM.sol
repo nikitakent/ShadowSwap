@@ -5,6 +5,7 @@ import "hardhat/console.sol";
 import "./Token.sol";
 
 contract AMM {
+    // TODO: contract should be renamed to token1-token2 pairing relationship
     Token public token1;
     Token public token2;
 
